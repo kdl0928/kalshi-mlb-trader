@@ -75,7 +75,9 @@ frozen research-side JSON the backtest uses.
    itself; the paper rule is the causal, implementable analog; both are documented at the
    fill machinery in `trading/paper_trader.py`.
 
-3. **When size is decided.** The backtest and paper engine can evaluate sizing at the
+3. **When size is decided.** (The deployed configuration sizes every order flat, so
+   this divergence is latent machinery rather than live behaviour.) The backtest and
+   paper engine can evaluate sizing at the
    *fill* instant; a real resting order cannot — its quantity is committed when the order
    is POSTED. The live path therefore sizes at placement time and enforces fill-instant
    guards by cancelling (the staleness pull) rather than by declining a fill it already
@@ -84,7 +86,8 @@ frozen research-side JSON the backtest uses.
 4. **The placement gate the research never modelled.** The backtest rests every rung
    unconditionally and scores only rungs that were actually hit; the live trader evaluates
    the model cutoff at post time on every rung it might place, so live also uses the
-   cutoff as a *placement* gate. The `place_thr`/`thr` split makes the two jobs explicit;
+   cutoff as a *placement* gate — and with flat sizing deployed, that gate is the
+   model's entire job. The `place_thr`/`thr` split makes the two jobs explicit;
    with both unset the frozen spec is reproduced byte for byte.
 
 5. **Rung geometry at the cent boundary.** The live event-driven re-peg occasionally pegs

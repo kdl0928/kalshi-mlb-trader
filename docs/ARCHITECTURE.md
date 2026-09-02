@@ -83,8 +83,9 @@ every change is verified by replaying a real recording and diffing the output by
 The engine is the shared core: the ladder mechanics (event-driven re-pegs off the
 delta-built mid, per-rung cancel/replace lag, episode caps, slate-flow gates, pre-game
 gates, settlement resolution via the public market endpoint with an MLB-final-score
-fallback), the frozen H010-B state-conditioned sizing model (32 order-book features + 7
-game-state features, scored at the post instant; coefficients are a frozen JSON snapshot so
+fallback), the frozen H010-B state-conditioned placement model (32 order-book features + 7
+game-state features, scored at the post instant to decide which rungs are posted at
+all — deployed sizing is flat; coefficients are a frozen JSON snapshot so
 research-side edits can never silently change what trades live), and write-token accounting
 against Kalshi's rate tiers.
 
