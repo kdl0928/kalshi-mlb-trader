@@ -171,13 +171,8 @@ a fake exchange.
 
 ## Open limitations
 
-Three known weaknesses in the current results, each with work in progress against it.
+Two known weaknesses in the current results, each with work in progress against it.
 
-- **The model trades at a cadence it was not fitted at.** The sizing coefficients were
-  fitted on features computed 100 ms before each fill, but the live ladder now re-pegs
-  at 350 ms. A backtest sweep found the edge roughly flat across that range, but the
-  sweep inherits the idealization below, so a refit at the operative cadence is the
-  priority.
 - **The backtest idealizes execution in the strategy's favor.** It reprices every order
   continuously with unlimited simultaneous replacements, while the live engine allows
   one cancel and replace in flight per order and discards decisions that arrive in the
@@ -191,8 +186,8 @@ Three known weaknesses in the current results, each with work in progress agains
 
 ## Future directions
 
-- **Close the last modeling gaps.** Refit the sizing model at the 350 ms cadence it now
-  trades at, and teach the backtest the placement gate the live trader applies.
+- **Close the last modeling gaps.** Teach the backtest the placement gate the live
+  trader applies.
 - **Scalability.** The sizing analysis shows the edge term, not capital, is the binding
   constraint, so growth comes from covering more markets rather than placing bigger
   orders. Higher API tiers allow more simultaneous games.
