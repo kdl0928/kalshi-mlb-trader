@@ -38,8 +38,18 @@ measurement, and a change:
 | Era | Config | Outcome |
 |---|---|---|
 | Jul 2026 pilot | $50 bankroll, size capped at 1 contract | Down about 1 percent. The goal was to prove the order path, and it exposed a series of real-execution bugs that became permanent fixes and tests. |
-| Aug 2026 | $451 bankroll, model sizing up to 15 contracts, five ladder depths, 500 ms re-peg | Down 12.6 percent. Diagnosis: the deepest ladder rung lost 5.2 cents per contract, filled overwhelmingly toward the batting team, and consumed about a third of the API write budget while filling least. |
+| Aug 2026 | $451 bankroll, flat 15 contract orders selected by the model, five ladder depths, 500 ms re-peg | Down 12.6 percent. Diagnosis: the deepest ladder rung lost 5.2 cents per contract, filled overwhelmingly toward the batting team, and consumed about a third of the API write budget while filling least. |
 | Aug 23 amendment | Deepest rung removed, re-peg tightened to 350 ms inside the same API budget, drift gate added | Up 25.3 percent on 205 round trips. |
+
+The August 23 amendment changed three things, and each is worth explaining. The
+deepest rung was removed because it was a run-catcher: deep orders fill almost
+exclusively when the batting team is surging, which is exactly when the move tends to
+continue rather than snap back, and the idle rung also consumed about a third of the
+API write budget while filling least. Removing it freed enough of the token budget to
+tighten the re-peg from 500 ms to 350 ms without changing tiers. And a drift gate was
+added: while a batting team's price is climbing, the orders positioned against that
+climb are pulled. The thesis is asymmetric. A batting team's upward moves are usually
+real rallies that continue, while its sudden drops are the overreactions worth fading.
 
 The loop working end to end is the point: a measured loss was traced to a specific
 cause, the fix was made as a deliberate amendment, and the sign flipped.
@@ -67,22 +77,27 @@ in flight per order slot and a 350 ms cadence. During a cascade this lag is a fe
 the resting orders are still priced off the pre-cascade mid when the burst arrives,
 which is exactly what lets them get filled at a discount.
 
-**Sizing.** At the moment an order would be posted, the engine computes 32 order-book
-features (short-horizon drift, realized volatility, spread windows, traded volume at
-and through the order's level, and flow across the whole day's slate of games) and 7
-game-state features (score, inning, baserunners, and related state from a live MLB
-data poll). An elastic net predicts the expected profit of a fill at that spot, and a
-quantile regression estimates the downside tail. Orders below an edge cutoff are not
-posted at all. Above it, size grows with predicted edge, is capped by a small fraction
-of recent market volume so the strategy never dominates the flow, and is clamped to a
-hard per-order maximum of 15 contracts. The fitted coefficients are frozen in a
-versioned snapshot, so no research-side change can silently alter what trades.
+**Order selection.** Sizing is flat: every order is posted at the same size, currently
+15 contracts. What the model controls is which orders exist. At the moment an order
+would be posted, the engine computes 32 order-book features (short-horizon drift,
+realized volatility, spread windows, traded volume at and through the order's level,
+and flow across the whole day's slate of games) and 7 game-state features (score,
+inning, baserunners, and related state from a live MLB data poll). An elastic net
+predicts the expected profit of a fill at that spot, a quantile regression estimates
+the downside tail, and only the spots that clear an edge cutoff are posted at all.
+This selection step is what makes the ladder feasible: Kalshi bills every order write
+against a token budget, and quoting every depth of every game at all times would blow
+through it. Cutting placements down to the spots with predicted edge is how the ladder
+fits inside the budget. The fitted coefficients are frozen in a versioned snapshot, so
+no research-side change can silently alter what trades.
 
 **Gates.** No order rests before a game's scheduled start. A slate-wide flow floor
 stands the ladder down when the whole day's market activity is too thin to support the
-edge. A drift gate pulls the orders positioned against a batting team whose price is
-climbing, on the thesis that a batting team's rallies tend to continue while its
-sudden drops tend to snap back. Total resting collateral is capped at a fixed fraction
+edge. A drift gate watches each game's batting team: while that team's price has
+climbed more than a couple of cents over the trailing seconds, the orders positioned
+against the climb are pulled, on the asymmetric thesis that a batting team's rallies
+are usually real and continue, while its sudden drops are the overreactions worth
+fading. Total resting collateral is capped at a fixed fraction
 of the bankroll, and the ladder covers at most five games at once, admitting new games
 as earlier ones settle.
 
@@ -134,7 +149,7 @@ book ahead of time and let overreactions come to them.
 
 From there the work became about selectivity. The resting ladder was first conditioned
 on simple signals like spread and order flow, and then the hand-tuned rules were
-replaced by the fitted sizing model described above.
+replaced by the fitted selection model described above.
 
 ## From backtest to live
 
