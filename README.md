@@ -89,7 +89,11 @@ This selection step is what makes the ladder feasible: Kalshi bills every order 
 against a token budget, and quoting every depth of every game at all times would blow
 through it. Cutting placements down to the spots with predicted edge is how the ladder
 fits inside the budget. The fitted coefficients are frozen in a versioned snapshot, so
-no research-side change can silently alter what trades.
+no research-side change can silently alter what trades. They were originally fitted on
+features computed at a 100 ms re-peg cadence and later refit at the deployed 350 ms
+cadence as a validation exercise: the refit proved statistically indistinguishable as
+a placement gate, so the frozen coefficients stand, now validated at the speed they
+trade at.
 
 **Gates.** No order rests before a game's scheduled start. A slate-wide flow floor
 stands the ladder down when the whole day's market activity is too thin to support the
